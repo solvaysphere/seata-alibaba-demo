@@ -65,7 +65,7 @@ spec:
       serviceAccountName: seata-ha-account
       containers:
         - name: seata-ha-order-service
-          image: "solvaysphere/seata-ha-order-service:1.0.0"
+          image: solvaysphere/seata-ha-order-service:1.0.0
           imagePullPolicy: IfNotPresent
           env:
             - name: NACOS_ADDR
@@ -78,7 +78,7 @@ spec:
               containerPort: 8101
               protocol: TCP
         - name: seata-ha-account-service
-          image: "solvaysphere/seata-ha-account-service:1.0.0"
+          image: solvaysphere/seata-ha-account-service:1.0.0
           imagePullPolicy: IfNotPresent
           env:
             - name: NACOS_ADDR
@@ -91,7 +91,7 @@ spec:
               containerPort: 8102
               protocol: TCP
         - name: seata-ha-storage-service
-          image: "solvaysphere/seata-ha-storage-service:1.0.0"
+          image: solvaysphere/seata-ha-storage-service:1.0.0
           imagePullPolicy: IfNotPresent
           env:
             - name: NACOS_ADDR
@@ -104,15 +104,15 @@ spec:
               containerPort: 8103
               protocol: TCP
         - name: seata-ha-business-service
-            image: "solvaysphere/seata-ha-business-service:1.0.0"
-            imagePullPolicy: IfNotPresent
-            env:
-              - name: NACOS_ADDR
-                valueFrom:
-                  configMapKeyRef:
-                    key: NACOS_ADDR
-                    name: seata-ha-service-config
-            ports:
-              - name: http
-                containerPort: 8104
-                protocol: TCP
+          image: solvaysphere/seata-ha-business-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NACOS_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  key: NACOS_ADDR
+                  name: seata-ha-service-config
+          ports:
+            - name: http
+              containerPort: 8104
+              protocol: TCP

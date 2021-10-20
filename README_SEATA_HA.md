@@ -34,11 +34,15 @@ kubectl apply -f nacos-server-ingress.yaml
 将以下配置添加到 Nacos 配置中心，具体添加方法可以参考 [script/config-center](https://github.com/seata/seata/tree/develop/script/config-center)
 ```properties
 service.vgroupMapping.my_test_tx_group=default
+service.vgroupMapping.seata-order-service-group=default
+service.vgroupMapping.seata-account-service-group=default
+service.vgroupMapping.seata-storage-service-group=default
+service.vgroupMapping.seata-business-service-group=default
 store.mode=db
 store.db.datasource=druid
 store.db.dbType=mysql
 store.db.driverClassName=com.mysql.jdbc.Driver
-store.db.url=jdbc:mysql://192.168.199.2:30060/seata?useUnicode=true
+store.db.url=jdbc:mysql://134.134.2.70:3306/seata?useUnicode=true&rewriteBatchedStatements=true
 store.db.user=root
 store.db.password=123456
 ```
@@ -142,23 +146,26 @@ kubectl apply -f seata-server.yaml
 ```shell
 kubectl get pod | grep seata-ha-server
 
-seata-ha-server-645844b8b6-9qh5j    1/1     Running   0          3m14s
-seata-ha-server-645844b8b6-pzczs    1/1     Running   0          3m14s
-seata-ha-server-645844b8b6-wkpw8    1/1     Running   0          3m14s
+seata-ha-server-0                                1/1     Running   0          5h39m
+seata-ha-server-1                                1/1     Running   0          5h39m
+seata-ha-server-2                                1/1     Running   0          5h39m
 ```
 
 待启动完成后，可以在 Nacos 的服务列表中发现三个 seata-server 的实例，至此，已经完成 seata-server 的高可用部署
 
 * 查看服务日志
 ```shell
-kubelet logs -f seata-ha-server-645844b8b6-9qh5j
+kubectl logs -f seata-ha-server-0
 ```
 ```shell
-[0.012s][info   ][gc] Using Serial
-2020-04-15 00:55:09.880 INFO [main]io.seata.server.ParameterParser.init:90 -The server is running in container.
-2020-04-15 00:55:10.013 INFO [main]io.seata.config.FileConfiguration.<init>:110 -The configuration file used is file:/root/seata-config/registry.conf
-2020-04-15 00:55:12.426 INFO [main]com.alibaba.druid.pool.DruidDataSource.init:947 -{dataSource-1} inited
-2020-04-15 00:55:13.127 INFO [main]io.seata.core.rpc.netty.RpcServerBootstrap.start:155 -Server started 
+SLF4J: A number (17) of logging calls during the initialization phase have been intercepted and are
+SLF4J: now being replayed. These are subject to the filtering rules of the underlying logging system.
+SLF4J: See also http://www.slf4j.org/codes.html#replay
+06:00:17.850  INFO --- [                     main] io.seata.server.Server                   : The server is running in container.
+06:00:17.876  INFO --- [                     main] io.seata.config.FileConfiguration        : The file name of the operation is file:/root/seata-config/registry
+06:00:17.881  INFO --- [                     main] io.seata.config.FileConfiguration        : The configuration file used is /root/seata-config/registry.conf
+06:00:20.118  INFO --- [                     main] com.alibaba.druid.pool.DruidDataSource   : {dataSource-1} inited
+06:00:20.675  INFO --- [                     main] i.s.core.rpc.netty.NettyServerBootstrap  : Server started, listen port: 8091
 ```
 
 其中{dataSource-1}说明使用了数据库，并正常初始化完成
@@ -210,18 +217,28 @@ seata.config.nacos.password=nacos
 
 * 项目编译打包
 ```shell
+docker login -u username -p password
+
 mvn clean install
 cd seata-storage-service
 docker build -t solvaysphere/seata-ha-storage-service:1.0.0 -f Dockerfile .
+docker push solvaysphere/seata-ha-storage-service:1.0.0
 
+cd ../
 cd seata-account-service
 docker build -t solvaysphere/seata-ha-account-service:1.0.0 -f Dockerfile .
+docker push solvaysphere/seata-ha-account-service:1.0.0
 
+cd ../
 cd seata-order-service
 docker build -t solvaysphere/seata-ha-order-service:1.0.0 -f Dockerfile .
+docker push solvaysphere/seata-ha-order-service:1.0.0
 
+cd ../
 cd seata-business-service
 docker build -t solvaysphere/seata-ha-business-service:1.0.0 -f Dockerfile .
+docker push solvaysphere/seata-ha-business-service:1.0.0
+
 ```
 
 * 部署服务
@@ -294,7 +311,7 @@ spec:
       serviceAccountName: seata-ha-account
       containers:
         - name: seata-ha-order-service
-          image: "solvaysphere/seata-ha-order-service:1.0.0"
+          image: solvaysphere/seata-ha-order-service:1.0.0
           imagePullPolicy: IfNotPresent
           env:
             - name: NACOS_ADDR
@@ -307,7 +324,7 @@ spec:
               containerPort: 8101
               protocol: TCP
         - name: seata-ha-account-service
-          image: "solvaysphere/seata-ha-account-service:1.0.0"
+          image: solvaysphere/seata-ha-account-service:1.0.0
           imagePullPolicy: IfNotPresent
           env:
             - name: NACOS_ADDR
@@ -320,7 +337,7 @@ spec:
               containerPort: 8102
               protocol: TCP
         - name: seata-ha-storage-service
-          image: "solvaysphere/seata-ha-storage-service:1.0.0"
+          image: solvaysphere/seata-ha-storage-service:1.0.0
           imagePullPolicy: IfNotPresent
           env:
             - name: NACOS_ADDR
@@ -333,7 +350,7 @@ spec:
               containerPort: 8103
               protocol: TCP
         - name: seata-ha-business-service
-            image: "solvaysphere/seata-ha-business-service:1.0.0"
+            image: solvaysphere/seata-ha-business-service:1.0.0
             imagePullPolicy: IfNotPresent
             env:
               - name: NACOS_ADDR
@@ -349,13 +366,15 @@ spec:
 
 通过以下命令，将应用部署到集群中
 ```shell
-kubectl apply -f application.yaml
+cd doc/seata-service
+kubectl apply -f seata-service-application.yaml
 ```
 然后查看创建的 pod，seata-ha-service 这个服务下有三个 pod
 ```shell
 kubectl get pod | grep seata-ha-service
 
-seata-ha-service-7dbdc6894b-5r8q4      3/3     Running   0          12m
+seata-ha-service-cfc578685-pgfwm                 4/4     Running   0          19m
+
 ```
 待应用启动后，在 Nacos 的服务列表中，会有相应的服务
 
@@ -363,13 +382,13 @@ seata-ha-service-7dbdc6894b-5r8q4      3/3     Running   0          12m
 
 此时查看服务的日志，会看到服务向每一个 TC 都注册了
 ```shell
-kubectl logs -f seata-ha-service-7dbdc6894b-5r8q4 seata-ha-order-service
+kubectl logs -f seata-ha-service-cfc578685-pgfwm seata-ha-business-service
 ```
 ![seata-ha-service-register.png](./doc/images/seata-ha-service-register.png)
 
 查看任意的 TC 日志，会发现每一个服务都向 TC 注册了
 ```shell
-kubelet logs -f seata-ha-server-645844b8b6-9qh5j
+kubectl logs -f seata-ha-server-0
 ```
 ![seata-ha-tc-register.png](./doc/images/seata-ha-tc-register.png)
 
@@ -378,17 +397,29 @@ kubelet logs -f seata-ha-server-645844b8b6-9qh5j
 调用下单接口，将 price 设置为 1，因为初始化的余额为 10，可以下单成功
 ```shell
 curl -X POST \
-  http://192.168.199.2:30081/order/placeOrder \
+  http://134.134.2.63:30084/business/buy \
   -H 'Content-Type: application/json' \
   -d '{
-    "userId": 1,
-    "productId": 1,
-    "price": 1
+    "userId": "1",
+    "amount": 100,
+    "count": 10,
+    "name": "水杯",
+    "commodityCode": "C201901140001"
 }'
 ```
 此时返回结果为：
 ```shell
-{"success":true,"message":null,"data":null}
+{
+    "code": 0,
+    "data": {
+        "orderNo": "162da417373d49079ff74e310b88ab75",
+        "userId": "1",
+        "commodityCode": "C201901140001",
+        "orderCount": 10,
+        "orderAmount": 100
+    },
+    "msg": "执行成功"
+}
 ```
 查看TC 的日志，事务成功提交：
 
