@@ -430,15 +430,17 @@ curl -X POST \
 
 ### 测试失败场景
 
-设置 price 为 100，此时余额不足，会下单失败抛出异常，事务会回滚
+下单失败抛出异常，事务会回滚
 ```shell
 curl -X POST \
-  http://192.168.199.2:30081/order/placeOrder \
+  http://134.134.2.63:30084/business/buy2 \
   -H 'Content-Type: application/json' \
   -d '{
-    "userId": 1,
-    "productId": 1,
-    "price": 100
+    "userId": "1",
+    "amount": 100,
+    "count": 10,
+    "name": "水杯",
+    "commodityCode": "C201901140001"
 }'
 ```
 查看 TC 的日志： 
