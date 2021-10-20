@@ -177,7 +177,7 @@ SLF4J: See also http://www.slf4j.org/codes.html#replay
 ## 部署业务服务
 
 * 创建业务表并初始化数据
-具体的业务表可以参考 [seata-alibaba-demo/README_SERVICE_SQL.md](seata-alibaba-demo/README_SERVICE_SQL.md)
+具体的业务表可以参考 [./README_SERVICE_SQL.md](seata-alibaba-demo/README_SERVICE_SQL.md)
 
 * 添加 Nacos 配置
 在 public 的命名空间下，分别创建 data-id 为 seata-business-service.properties, seata-order-service.properties, seata-account-service.properties, seata-storage-service.properties 的配置，内容相同，需要修改数据库的地址、用户名和密码
